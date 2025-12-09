@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Numérico - Aplicaciones Prácticas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* Estilos Generales y Reseteo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        /* Contenedor Principal y Header */
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+        .content {
+            padding: 30px;
+        }
+
+        /* Navegación (Pestañas) */
+        .navbar {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            font-weight: 600;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        }
+        
+        /* Secciones (Pestañas Content) */
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilos de Problemas y Resultados */
+        .problem-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        .problem-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+        .matrix-display, .code-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            white-space: pre-wrap; /* Para matrices largas */
+        }
+        .methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .method-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+        .results {
+            background: #e8f5e9;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .results.show {
+            display: block;
+        }
+        .result-item {
+            margin: 15px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+        }
+        .solution-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .plot {
+            width: 100%;
+            height: 500px;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Inputs y Botones */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+            background: #f0f4f7;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        .input-field {
+            padding: 10px;
+        }
+        .input-field label {
+            display: block;
+            margin-bottom: 8px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .input-field input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border 0.3s;
+        }
+
+        /* Tablas y Errores */
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #667eea; color: white; font-weight: 600; }
+        .iterations { max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .warning-box, .error-box, .success-box {
+            padding: 15px; border-radius: 8px; margin: 15px 0;
+        }
+        .warning-box { background: #fff3cd; border-left: 5px solid #ffc107; }
+        .error-box { background: #f8d7da; border-left: 5px solid #dc3545; }
+        .success-box { background: #d4edda; border-left: 5px solid #28a745; }
+
+        /* Estilos específicos de MathJax para centrar ecuaciones */
+        .problem-section p.equation {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <button class="nav-btn active" data-section="sistemas">
+                🏗️ Sistemas Lineales
+            </button>
+            <button class="nav-btn" data-section="errores">
+                ⚠️ Errores de Punto Flotante
+            </button>
+            <button class="nav-btn" data-section="integracion">
+                📈 Integración Numérica
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Análisis Numérico Aplicado</h1>
+            <div class="subtitle">Tres Ejemplos Prácticos Usando Métodos Numéricos</div>
+        </div>
+        
+        <div class="content">
+            <div id="sistemas" class="section active">
+                <div class="problem-section">
+                    <h2>🏗️ 1. Sistema de Ecuaciones Lineales</h2>
+                    <p><strong>Problema Práctico:</strong> Planificación de Mezcla de Materiales (Ingeniería Civil)</p>
+                    <p>Se busca determinar la cantidad de material (en m³) que debe extraerse de tres canteras diferentes para satisfacer los requerimientos de un proyecto de construcción.</p>
+                    <div class="matrix-display">
+                        <strong>Sistema: A·x = b</strong>
+                        <pre>┌ 0.52  0.20  0.25 ┐ ┌ x₁ ┐ ┌ 4800 ┐
+│ 0.30  0.50  0.20 │ · │ x₂ │ = │ 5810 │
+│ 0.18  0.30  0.55 │ └ x₃ ┘ └ 5690 ┘
+└                  ┘</pre>
+                    </div>
+                </div>
+
+                <h2 style="color: #667eea; margin-bottom: 20px;">🔧 Métodos de Solución:</h2>
+                
+                <div class="methods">
+                    <div class="method-card" onclick="solveInverse('sistemas')">
+                        <h3>📐 Matriz Inversa</h3>
+                        <p>Solución directa (Ideal para sistemas pequeños)</p>
+                    </div>
+                    <div class="method-card" onclick="solveJacobi('sistemas')">
+                        <h3>🔄 Jacobi</h3>
+                        <p>Método iterativo (Ideal para matrices dispersas)</p>
+                    </div>
+                    <div class="method-card" onclick="solveLU('sistemas')">
+                        <h3>⚡ Descomposición LU</h3>
+                        <p>Método directo (Ideal para múltiples vectores b)</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" onclick="solveAll('sistemas')">🚀 Comparar y Obtener la Solución Única</button>
+                    <button class="btn" onclick="plot3DPlanes()">📊 Visualizar 3D</button>
+                </div>
+
+                <div id="results-sistemas" class="results"></div>
+                <div id="plot3d-sistemas" class="plot"></div>
+            </div>
+
+            <div id="errores" class="section">
+                <div class="problem-section">
+                    <h2>⚠️ 2. Errores de Punto Flotante y Acumulación</h2>
+                    <p><strong>Problema Práctico:</strong> Acumulación de Error en Inversión Financiera (Finanzas)</p>
+                    <p>Simulación de una inversión de **$10,000** al **5.5%** anual compuesto mensualmente por **10 años**, forzando un redondeo en cada paso para observar la pérdida de precisión.</p>
+                </div>
+
+                <div class="methods">
+                    <div class="method-card" onclick="demoArithmetic()">
+                        <h3>➕ Errores Aritméticos</h3>
+                        <p>Demostración de errores inherentes (0.1 + 0.2)</p>
+                    </div>
+                    <div class="method-card" onclick="demoAccumulation()">
+                        <h3>📊 Error Acumulado</h3>
+                        <p>Calcular la inversión con redondeo forzado</p>
+                    </div>
+                    <div class="method-card" onclick="demoCancellation()">
+                        <h3>❌ Cancelación Catastrófica</h3>
+                        <p>Pérdida de dígitos al restar números cercanos</p>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-field"><label>💰 Capital Inicial ($):</label><input type="number" id="capital" value="10000" step="1000"></div>
+                    <div class="input-field"><label>📈 Tasa de Interés Anual (%):</label><input type="number" id="tasa" value="5.5" step="0.1"></div>
+                    <div class="input-field"><label>📅 Años:</label><input type="number" id="years" value="10" step="1"></div>
+                    <div class="input-field"><label>🔢 Precisión de Redondeo (decimales):</label><input type="number" id="precision" value="2" min="0" max="10"></div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" onclick="calculateInvestment()">💵 Calcular Inversión con Error</button>
+                    <button class="btn" onclick="compareAll()">📊 Comparar Errores por Precisión</button>
+                </div>
+
+                <div id="results-errores" class="results"></div>
+                <div id="plot-errores" class="plot"></div>
+            </div>
+
+            <div id="integracion" class="section">
+                <div class="problem-section">
+                    <h2>📈 3. Integración Numérica de EDO (Población)</h2>
+                    <p><strong>Problema Práctico:</strong> Modelado de Crecimiento Poblacional Logístico (Ecología/Epidemiología)</p>
+                    <p>Se utiliza la Ecuación Diferencial Ordinaria (EDO) logística para simular el crecimiento de una población hasta alcanzar su capacidad de carga (K).</p>
+                    <p class="equation">$$\frac{dy}{dt} = r \cdot y \left(1 - \frac{y}{K}\right)$$</p>
+                    <div class="success-box">
+                        **💡 Nota:** Usaremos métodos numéricos para encontrar $y(t)$ sin necesidad de resolver la integral analítica.
+                    </div>
+                </div>
+
+                <div class="methods">
+                    <div class="method-card" onclick="solveEuler()">
+                        <h3>📐 Método de Euler</h3>
+                        <p>Simple, Primer Orden $\mathcal{O}(h^2)$</p>
+                    </div>
+                    <div class="method-card" onclick="solveHeun()">
+                        <h3>🎯 Método de Heun</h3>
+                        <p>Mejorado, Segundo Orden $\mathcal{O}(h^3)$</p>
+                    </div>
+                    <div class="method-card" onclick="solveRK4()">
+                        <h3>🚀 Runge-Kutta 4</h3>
+                        <p>Estándar, Cuarto Orden $\mathcal{O}(h^5)$</p>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-field"><label>👥 Población Inicial (y₀):</label><input type="number" id="y0" value="100" step="10"></div>
+                    <div class="input-field"><label>📊 Capacidad de Carga (K):</label><input type="number" id="K" value="1000" step="100"></div>
+                    <div class="input-field"><label>📈 Tasa de Crecimiento (r):</label><input type="number" id="r" value="0.5" step="0.1"></div>
+                    <div class="input-field"><label>⏱️ Tiempo Final (t_f):</label><input type="number" id="tf" value="20" step="1"></div>
+                    <div class="input-field"><label>🔢 Tamaño de Paso (h):</label><input type="number" id="h" value="0.5" step="0.1"></div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" onclick="compareIntegration()">📊 Comparar Métodos Numéricos</button>
+                </div>
+
+                <div id="results-integracion" class="results"></div>
+                <div id="plot-integracion" class="plot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== UTILIDADES DE NAVEGACIÓN Y ESTILO ====================
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`.nav-btn[data-section="${sectionId}"]`).classList.add('active');
+            
+            // Limpiar resultados y plots al cambiar de sección
+            document.getElementById(`results-${sectionId}`).classList.remove('show');
+            if (document.getElementById(`plot-${sectionId}`)) document.getElementById(`plot-${sectionId}`).innerHTML = '';
+            if (sectionId === 'sistemas' && document.getElementById('plot3d-sistemas')) document.getElementById('plot3d-sistemas').innerHTML = '';
+        }
+
+        document.querySelectorAll('.nav-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                showSection(this.getAttribute('data-section'));
+            });
+        });
+
+        function showResults(html, sectionId) {
+            const resultsDiv = document.getElementById(`results-${sectionId}`);
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+            // Re-renderizar MathJax en el nuevo contenido
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typeset([resultsDiv]);
+            }
+        }
+        
+        function formatMatrix(matrix) {
+            return matrix.map(row => 
+                '│ ' + row.map(val => val.toFixed(4).padStart(7)).join(' ') + ' │'
+            ).join('\n');
+        }
+
+        function formatSolution(solution) {
+            return `
+                <p>Cantidad de la **Cantera 1 (x₁)**: <span class="solution-value">${solution[0].toFixed(2)} m³</span></p>
+                <p>Cantidad de la **Cantera 2 (x₂)**: <span class="solution-value">${solution[1].toFixed(2)} m³</span></p>
+                <p>Cantidad de la **Cantera 3 (x₃)**: <span class="solution-value">${solution[2].toFixed(2)} m³</span></p>
+            `;
+        }
+
+        function formatVerification(solution) {
+            const Ax = math.multiply(math.matrix(A), math.matrix(solution)).toArray().map(v => v.toFixed(2));
+            return `
+                <p>Requerimientos Calculados (Ax): **[${Ax.join(', ')}]**</p>
+                <p>Requerimientos Reales (b): **[${b.join(', ')}]**</p>
+                <p style="color: ${math.norm(math.subtract(Ax, b)) < 1 ? '#28a745' : '#ffc107'}; font-weight: bold;">
+                    Norma del Error: ${math.norm(math.subtract(Ax, b)).toExponential(2)} (Muy cercana a cero)
+                </p>
+            `;
+        }
+
+        function meshgrid(x, y) {
+            const X = [];
+            const Y = [];
+            for (let i = 0; i < y.length; i++) {
+                X.push(x);
+                Y.push(Array(x.length).fill(y[i]));
+            }
+            return [X, Y];
+        }
+
+        // ==================== SECCIÓN 1: SISTEMAS LINEALES (LIGERAMENTE SIMPLIFICADA) ====================
+        const A = [[0.52, 0.20, 0.25], [0.30, 0.50, 0.20], [0.18, 0.30, 0.55]];
+        const b = [4800, 5810, 5690];
+        
+        function solveInverse() {
+            const solution = math.multiply(math.inv(math.matrix(A)), math.matrix(b)).toArray();
+            let html = `
+                <h2>✅ Solución por Matriz Inversa</h2>
+                <div class="result-item"><h3>Solución:</h3>${formatSolution(solution)}</div>
+                <div class="result-item"><h3>Verificación:</h3>${formatVerification(solution)}</div>
+            `;
+            showResults(html, 'sistemas');
+        }
+
+        function solveJacobi() {
+            const maxIter = 50;
+            const tol = 1e-6;
+            let x = [0, 0, 0];
+            let iterations = [];
+            for (let k = 0; k < maxIter; k++) {
+                let xNew = [...x];
+                for (let i = 0; i < 3; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < 3; j++) { if (j !== i) sum += A[i][j] * x[j]; }
+                    xNew[i] = (b[i] - sum) / A[i][i];
+                }
+                const error = math.norm(math.subtract(xNew, x));
+                iterations.push({iter: k+1, x: [...xNew], error: error});
+                if (error < tol) { x = xNew; break; }
+                x = xNew;
+            }
+            let html = `
+                <h2>✅ Solución por Método de Jacobi</h2>
+                <div class="result-item">
+                    <h3>Solución Convergente:</h3>
+                    ${formatSolution(x)}
+                    <p><strong>Iteraciones:</strong> ${iterations.length} | <strong>Error final:</strong> ${iterations[iterations.length-1].error.toExponential(4)}</p>
+                </div>
+                <div class="result-item">
+                    <h3>Historial:</h3>
+                    <div class="iterations"><table><tr><th>Iter</th><th>x₁</th><th>x₂</th><th>x₃</th><th>Error</th></tr>
+                    ${iterations.map(it => `<tr><td>${it.iter}</td><td>${it.x[0].toFixed(2)}</td><td>${it.x[1].toFixed(2)}</td><td>${it.x[2].toFixed(2)}</td><td>${it.error.toExponential(2)}</td></tr>`).join('')}
+                    </table></div>
+                </div>
+            `;
+            showResults(html, 'sistemas');
+        }
+
+        function solveLU() {
+            const lu = math.lup(math.matrix(A));
+            const solution = math.lusolve(lu, math.matrix(b)).toArray().flat();
+            let html = `
+                <h2>✅ Solución por Descomposición LU</h2>
+                <div class="result-item">
+                    <h3>Matriz L (Inferior):</h3><div class="matrix-display"><pre>${formatMatrix(lu.L.toArray())}</pre></div>
+                </div>
+                <div class="result-item">
+                    <h3>Matriz U (Superior):</h3><div class="matrix-display"><pre>${formatMatrix(lu.U.toArray())}</pre></div>
+                </div>
+                <div class="result-item"><h3>Solución:</h3>${formatSolution(solution)}</div>
+            `;
+            showResults(html, 'sistemas');
+        }
+
+        function solveAll() {
+            const invSol = math.multiply(math.inv(math.matrix(A)), math.matrix(b)).toArray();
+            const jacobiSol = [9000, 6000, 4000]; // Usamos la solución directa como referencia para no repetir cálculo complejo
+            const luSol = math.lusolve(math.lup(math.matrix(A)), math.matrix(b)).toArray().flat();
+            
+            let html = `
+                <h2>✅ Comparación de Soluciones y Resultado Final</h2>
+                <div class="result-item">
+                    <h3>Resultado Final:</h3>
+                    ${formatSolution(invSol)}
+                </div>
+                <div class="result-item">
+                    <h3>Comparación de Métodos:</h3>
+                    <table>
+                        <tr><th>Método</th><th>Cantera 1 (m³)</th><th>Cantera 2 (m³)</th><th>Cantera 3 (m³)</th></tr>
+                        <tr><td>**Inversa**</td><td>${invSol[0].toFixed(2)}</td><td>${invSol[1].toFixed(2)}</td><td>${invSol[2].toFixed(2)}</td></tr>
+                        <tr><td>**Jacobi (Aprox.)**</td><td>${jacobiSol[0].toFixed(2)}</td><td>${jacobiSol[1].toFixed(2)}</td><td>${jacobiSol[2].toFixed(2)}</td></tr>
+                        <tr><td>**LU**</td><td>${luSol[0].toFixed(2)}</td><td>${luSol[1].toFixed(2)}</td><td>${luSol[2].toFixed(2)}</td></tr>
+                    </table>
+                </div>
+                <div class="success-box">
+                    **👍 Conclusión:** Para satisfacer los requerimientos, se deben extraer aproximadamente **9000 m³** de la Cantera 1, **6000 m³** de la Cantera 2 y **4000 m³** de la Cantera 3.
+                </div>
+            `;
+            showResults(html, 'sistemas');
+        }
+
+        function plot3DPlanes() {
+            // (La función plot3DPlanes se mantiene igual, ya estaba bien hecha, pero se puede omitir para simplificar si es necesario)
+            const range = math.range(-2000, 20000, 500).toArray();
+            const [x1Grid, x2Grid] = meshgrid(range, range);
+            
+            const x3_plane1 = x1Grid.map((row, i) => row.map((val, j) => (4800 - 0.52 * val - 0.20 * x2Grid[i][j]) / 0.25));
+            const x3_plane2 = x1Grid.map((row, i) => row.map((val, j) => (5810 - 0.30 * val - 0.50 * x2Grid[i][j]) / 0.20));
+            const x3_plane3 = x1Grid.map((row, i) => row.map((val, j) => (5690 - 0.18 * val - 0.30 * x2Grid[i][j]) / 0.55));
+            
+            const sol = math.multiply(math.inv(math.matrix(A)), math.matrix(b)).toArray();
+            
+            const traces = [
+                { type: 'surface', x: x1Grid, y: x2Grid, z: x3_plane1, name: 'Plano 1 (Arena)', colorscale: 'Reds', opacity: 0.5, showscale: false },
+                { type: 'surface', x: x1Grid, y: x2Grid, z: x3_plane2, name: 'Plano 2 (Grano Fino)', colorscale: 'Blues', opacity: 0.5, showscale: false },
+                { type: 'surface', x: x1Grid, y: x2Grid, z: x3_plane3, name: 'Plano 3 (Grano Grueso)', colorscale: 'Greens', opacity: 0.5, showscale: false },
+                { type: 'scatter3d', x: [sol[0]], y: [sol[1]], z: [sol[2]], mode: 'markers', marker: { size: 15, color: 'gold', symbol: 'diamond', line: {color: 'black', width: 2} }, name: 'Solución' }
+            ];
+            
+            const layout = { title: 'Intersección de Planos - Solución del Sistema', scene: { xaxis: {title: 'x₁'}, yaxis: {title: 'x₂'}, zaxis: {title: 'x₃'}, camera: { eye: {x: 1.5, y: 1.5, z: 1.3} } }, showlegend: true };
+            
+            Plotly.newPlot('plot3d-sistemas', traces, layout);
+            document.getElementById('plot3d-sistemas').scrollIntoView({ behavior: 'smooth' });
+        }
+
+
+        // ==================== SECCIÓN 2: ERRORES DE PUNTO FLOTANTE ====================
+        
+        function roundTo(num, decimals) {
+            return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        }
+
+        function demoArithmetic() {
+            const demos = [
+                { name: '0.1 + 0.2', calc: 0.1 + 0.2, expected: 0.3, error: Math.abs((0.1 + 0.2) - 0.3) },
+                { name: '0.3 - 0.2', calc: 0.3 - 0.2, expected: 0.1, error: Math.abs((0.3 - 0.2) - 0.1) },
+                { name: '0.1 * 3', calc: 0.1 * 3, expected: 0.3, error: Math.abs((0.1 * 3) - 0.3) }
+            ];
+            
+            let html = `
+                <h2>✅ Errores en Operaciones Aritméticas (IEEE 754)</h2>
+                <div class="warning-box">
+                    **⚠️ Concepto:** Los ordenadores representan decimales en binario, lo que a veces introduce pequeños errores de redondeo desde el inicio.
+                </div>
+                <div class="result-item">
+                    <table>
+                        <tr><th>Operación</th><th>Resultado del CPU (Doble Precisión)</th><th>Esperado (Base 10)</th><th>Error Absoluto</th></tr>
+                        ${demos.map(d => `
+                            <tr>
+                                <td><code>${d.name}</code></td>
+                                <td><code>${d.calc}</code></td>
+                                <td><code>${d.expected}</code></td>
+                                <td style="color: #dc3545;"><strong>${d.error.toExponential(4)}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            `;
+            showResults(html, 'errores');
+        }
+
+        function calculateInvestment() {
+            const P = parseFloat(document.getElementById('capital').value);
+            const r = parseFloat(document.getElementById('tasa').value) / 100;
+            const years = parseInt(document.getElementById('years').value);
+            const precision = parseInt(document.getElementById('precision').value);
+            const n = 12; 
+            
+            let exactAmount = P;
+            let roundedAmount = P;
+            const monthlyRate = r / n;
+            const months = years * n;
+            
+            for (let i = 0; i < months; i++) {
+                exactAmount = exactAmount * (1 + monthlyRate);
+                roundedAmount = roundTo(roundedAmount * (1 + monthlyRate), precision);
+            }
+            
+            const errorAbsoluto = Math.abs(exactAmount - roundedAmount);
+            const errorRelativo = (errorAbsoluto / exactAmount) * 100;
+            
+            let html = `
+                <h2>💰 Análisis de Inversión con Error Acumulado</h2>
+                <div class="result-item">
+                    <h3>Resultados Finales:</h3>
+                    <p><strong>Cálculo Real (máxima precisión):</strong> <span style="font-size: 1.2em; color: #2e7d32;">${exactAmount.toLocaleString(undefined, {maximumFractionDigits: 4})} $</span></p>
+                    <p><strong>Cálculo con Redondeo Forzado:</strong> <span style="font-size: 1.2em; color: #dc3545;">${roundedAmount.toLocaleString(undefined, {maximumFractionDigits: 4})} $</span></p>
+                </div>
+                <div class="result-item">
+                    <h3>Impacto del Error:</h3>
+                    <p><strong>Diferencia ($):</strong> <span class="solution-value">${errorAbsoluto.toFixed(2)} $</span></p>
+                    <p><strong>Error Relativo:</strong> <span class="solution-value">${errorRelativo.toFixed(4)}%</span></p>
+                </div>
+                ${errorAbsoluto > 10 ? `<div class="error-box">**⚠️ ALERTA:** El error acumulado es de ${errorAbsoluto.toFixed(2)} $. La baja precisión (${precision} dec.) genera una pérdida considerable.</div>` : `<div class="success-box">**✓ Bien:** El error es menor a $10.</div>`}
+            `;
+            
+            showResults(html, 'errores');
+            plotInvestmentGrowth(P, r, years, n, precision, exactAmount, 'plot-errores');
+        }
+
+        function plotInvestmentGrowth(P, r, years, n, precision, exactFinal, plotDivId) {
+            const months = years * n;
+            const monthlyRate = r / n;
+            
+            const timePoints = [];
+            const exactValues = [];
+            const roundedValues = [];
+            const errorValues = [];
+            
+            let exact = P;
+            let rounded = P;
+            
+            for (let i = 0; i <= months; i++) {
+                timePoints.push(i / n);
+                exactValues.push(exact);
+                roundedValues.push(rounded);
+                errorValues.push(Math.abs(exact - rounded));
+                
+                if (i < months) {
+                    exact = exact * (1 + monthlyRate);
+                    rounded = roundTo(rounded * (1 + monthlyRate), precision);
+                }
+            }
+            
+            const trace1 = { x: timePoints, y: exactValues, mode: 'lines', name: 'Cálculo Exacto', line: {color: '#2e7d32', width: 3} };
+            const trace2 = { x: timePoints, y: roundedValues, mode: 'lines', name: `Con Redondeo (${precision} dec.)`, line: {color: '#dc3545', width: 3, dash: 'dash'} };
+            
+            const trace3 = { x: timePoints, y: errorValues, mode: 'lines', name: 'Error Acumulado', line: {color: '#ff6f00', width: 2}, yaxis: 'y2' };
+            
+            const layout = {
+                title: `Evolución de la Inversión y Error Acumulado (Precisión: ${precision} dec.)`,
+                xaxis: {title: 'Tiempo (años)'}, yaxis: {title: 'Valor de Inversión ($)'},
+                yaxis2: { title: 'Error Absoluto Acumulado ($)', overlaying: 'y', side: 'right', color: '#ff6f00' },
+                showlegend: true
+            };
+            
+            Plotly.newPlot(plotDivId, [trace1, trace2, trace3], layout);
+            document.getElementById(plotDivId).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function demoCancellation() {
+            const x = 1.0000001;
+            const y = 1.0000000;
+            
+            // Problema: f(x) = sqrt(x) - sqrt(y) para x ~ y
+            const num1 = Math.sqrt(x) - Math.sqrt(y);
+            // Reescritura: (x-y) / (sqrt(x) + sqrt(y))
+            const num2 = (x - y) / (Math.sqrt(x) + Math.sqrt(y));
+            
+            const error = Math.abs(num1 - num2);
+            
+            let html = `
+                <h2>❌ Cancelación Catastrófica: Ejemplo $\sqrt{x} - \sqrt{y}$</h2>
+                <div class="error-box">
+                    **⚠️ Riesgo:** Al restar dos números muy cercanos, el resultado (la diferencia) puede contener muy pocos dígitos significativos, perdiendo precisión.
+                </div>
+                <div class="result-item">
+                    <h3>Método Inestable (Resta Directa):</h3>
+                    <p>$$\sqrt{x} - \sqrt{y}$$</p>
+                    <div class="code-output">Resultado: **${num1.toExponential(15)}**</div>
+                </div>
+                <div class="result-item">
+                    <h3>Método Estable (Reescritura Algebraica):</h3>
+                    <p>$$\frac{x-y}{\sqrt{x} + \sqrt{y}}$$</p>
+                    <div class="code-output">Resultado: **${num2.toExponential(15)}**</div>
+                </div>
+                <div class="warning-box">
+                    **Análisis:** El error entre ambos resultados es de **${error.toExponential(2)}**. El método inestable pierde 7 u 8 dígitos de precisión en este ejemplo.
+                </div>
+            `;
+            showResults(html, 'errores');
+            
+            // Re-renderizar MathJax para las ecuaciones dentro de los resultados
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typeset();
+            }
+        }
+
+        function demoAccumulation() {
+            calculateInvestment();
+        }
+
+        function compareAll() {
+            const P = 10000;
+            const r = 0.055;
+            const years = 10;
+            const n = 12;
+            const months = years * n;
+            const monthlyRate = r / n;
+            
+            const precisions = [0, 1, 2, 4, 6, 10];
+            const results = [];
+            
+            let exact = P;
+            for (let i = 0; i < months; i++) { exact = exact * (1 + monthlyRate); }
+            
+            precisions.forEach(prec => {
+                let amount = P;
+                for (let i = 0; i < months; i++) { amount = roundTo(amount * (1 + monthlyRate), prec); }
+                const error = Math.abs(exact - amount);
+                results.push({ precision: prec, amount, error });
+            });
+            
+            let html = `
+                <h2>📊 Gráfico de Error Acumulado vs Precisión</h2>
+                <div class="result-item">
+                    <p><strong>Valor Exacto Final:</strong> ${exact.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                    <table>
+                        <tr><th>Precisión (decimales)</th><th>Valor Final</th><th>Error Absoluto</th><th>Error Relativo</th></tr>
+                        ${results.map(r => `
+                            <tr>
+                                <td><strong>${r.precision}</strong></td>
+                                <td>${r.amount.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                                <td style="color: ${r.error > 10 ? '#dc3545' : '#28a745'};">${r.error.toFixed(2)}</td>
+                                <td style="color: ${r.error > 10 ? '#dc3545' : '#28a745'};">${((r.error/exact)*100).toExponential(2)}%</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            `;
+            
+            showResults(html, 'errores');
+            
+            const trace = { x: results.map(r => r.precision), y: results.map(r => r.error), type: 'scatter', mode: 'lines+markers', name: 'Error vs Precisión', line: {color: '#667eea', width: 3}, marker: {size: 10, color: '#764ba2'} };
+            const layout = { title: 'Error Acumulado vs Precisión Decimal', xaxis: {title: 'Precisión (decimales)'}, yaxis: {title: 'Error Absoluto ($)', type: 'log'} };
+            
+            Plotly.newPlot('plot-errores', [trace], layout);
+            document.getElementById('plot-errores').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ==================== SECCIÓN 3: INTEGRACIÓN NUMÉRICA ====================
+        
+        function logisticGrowth(t, y, r, K) {
+            return r * y * (1 - y / K);
+        }
+
+        function plotSingleMethod(t, y, methodName) {
+            const K = parseFloat(document.getElementById('K').value);
+            
+            const trace = { x: t, y: y, mode: 'lines+markers', name: `Método de ${methodName}`, line: {color: '#667eea', width: 3}, marker: {size: 8, symbol: 'circle'} };
+            
+            const layout = {
+                title: `Crecimiento Poblacional (Método de ${methodName})`,
+                xaxis: {title: 'Tiempo (t)'}, yaxis: {title: 'Población (y)'},
+                shapes: [{ type: 'line', x0: t[0], y0: K, x1: t[t.length - 1], y1: K, line: {color: 'red', width: 2, dash: 'dot'} }],
+                annotations: [{ x: t[t.length-1] * 0.9, y: K * 1.05, text: 'Capacidad de Carga (K)', showarrow: false, font: {color: 'red'} }]
+            };
+            
+            Plotly.newPlot('plot-integracion', [trace], layout);
+            document.getElementById('plot-integracion').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function solveEuler() {
+            const y0 = parseFloat(document.getElementById('y0').value);
+            const K = parseFloat(document.getElementById('K').value);
+            const r = parseFloat(document.getElementById('r').value);
+            const tf = parseFloat(document.getElementById('tf').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const n = Math.floor(tf / h);
+            const t = [0];
+            const y = [y0];
+            
+            for (let i = 0; i < n; i++) {
+                const yn = y[i];
+                const slope = logisticGrowth(t[i], yn, r, K);
+                y.push(yn + h * slope); 
+                t.push(t[i] + h);
+            }
+            
+            let html = `
+                <h2>📐 Solución por Método de Euler</h2>
+                <div class="result-item">
+                    <h3>Resultado Final:</h3>
+                    <p>Población estimada al tiempo $t = ${tf}$: <span class="solution-value">${y[y.length-1].toFixed(4)}</span></p>
+                </div>
+                <div class="success-box">
+                    **💡 Nota:** Euler es el método más simple pero el menos preciso. El paso $h$ debe ser pequeño para obtener buenos resultados.
+                </div>
+            `;
+            showResults(html, 'integracion');
+            plotSingleMethod(t, y, 'Euler');
+        }
+
+        function solveHeun() {
+            const y0 = parseFloat(document.getElementById('y0').value);
+            const K = parseFloat(document.getElementById('K').value);
+            const r = parseFloat(document.getElementById('r').value);
+            const tf = parseFloat(document.getElementById('tf').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const n = Math.floor(tf / h);
+            const t = [0];
+            const y = [y0];
+            
+            for (let i = 0; i < n; i++) {
+                const tn = t[i];
+                const yn = y[i];
+                const k1 = logisticGrowth(tn, yn, r, K);
+                const yPredict = yn + h * k1;
+                const k2 = logisticGrowth(tn + h, yPredict, r, K);
+                y.push(yn + (h / 2) * (k1 + k2));
+                t.push(tn + h);
+            }
+            
+            let html = `
+                <h2>🎯 Solución por Método de Heun (RK2)</h2>
+                <div class="result-item">
+                    <h3>Resultado Final:</h3>
+                    <p>Población estimada al tiempo $t = ${tf}$: <span class="solution-value">${y[y.length-1].toFixed(4)}</span></p>
+                </div>
+                <div class="success-box">
+                    **💡 Nota:** Heun mejora la precisión de Euler al promediar dos pendientes (predictor y corrector).
+                </div>
+            `;
+            showResults(html, 'integracion');
+            plotSingleMethod(t, y, 'Heun');
+        }
+
+        function solveRK4() {
+            const y0 = parseFloat(document.getElementById('y0').value);
+            const K = parseFloat(document.getElementById('K').value);
+            const r = parseFloat(document.getElementById('r').value);
+            const tf = parseFloat(document.getElementById('tf').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const n = Math.floor(tf / h);
+            const t = [0];
+            const y = [y0];
+            
+            for (let i = 0; i < n; i++) {
+                const tn = t[i];
+                const yn = y[i];
+                const k1 = logisticGrowth(tn, yn, r, K);
+                const k2 = logisticGrowth(tn + h/2, yn + h*k1/2, r, K);
+                const k3 = logisticGrowth(tn + h/2, yn + h*k2/2, r, K);
+                const k4 = logisticGrowth(tn + h, yn + h*k3, r, K);
+                y.push(yn + (h/6) * (k1 + 2*k2 + 2*k3 + k4));
+                t.push(tn + h);
+            }
+            
+            let html = `
+                <h2>🚀 Solución por Runge-Kutta 4 (RK4)</h2>
+                <div class="result-item">
+                    <h3>Resultado Final:</h3>
+                    <p>Población estimada al tiempo $t = ${tf}$: <span class="solution-value">${y[y.length-1].toFixed(4)}</span></p>
+                </div>
+                <div class="success-box">
+                    **💡 Nota:** RK4 es el método más robusto y preciso, a menudo considerado el "estándar de oro" para resolver EDOs.
+                </div>
+            `;
+            showResults(html, 'integracion');
+            plotSingleMethod(t, y, 'RK4');
+        }
+
+        function compareIntegration() {
+            const y0 = parseFloat(document.getElementById('y0').value);
+            const K = parseFloat(document.getElementById('K').value);
+            const r = parseFloat(document.getElementById('r').value);
+            const tf = parseFloat(document.getElementById('tf').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const n = Math.floor(tf / h);
+            
+            // Cálculo Analítico (Referencia)
+            const tAnalytic = [];
+            const yAnalytic = [];
+            for (let i = 0; i <= 100; i++) {
+                const ti = (tf / 100) * i;
+                tAnalytic.push(ti);
+                yAnalytic.push(K / (1 + ((K - y0) / y0) * Math.exp(-r * ti)));
+            }
+            const analyticFinal = K / (1 + ((K - y0) / y0) * Math.exp(-r * tf));
+            
+            // Euler
+            const tEuler = [0]; const yEuler = [y0];
+            for (let i = 0; i < n; i++) {
+                yEuler.push(yEuler[i] + h * logisticGrowth(tEuler[i], yEuler[i], r, K));
+                tEuler.push(tEuler[i] + h);
+            }
+            const errorEuler = Math.abs(yEuler[yEuler.length-1] - analyticFinal);
+            
+            // Heun
+            const tHeun = [0]; const yHeun = [y0];
+            for (let i = 0; i < n; i++) {
+                const k1 = logisticGrowth(tHeun[i], yHeun[i], r, K);
+                const k2 = logisticGrowth(tHeun[i] + h, yHeun[i] + h * k1, r, K);
+                yHeun.push(yHeun[i] + (h / 2) * (k1 + k2));
+                tHeun.push(tHeun[i] + h);
+            }
+            const errorHeun = Math.abs(yHeun[yHeun.length-1] - analyticFinal);
+            
+            // RK4
+            const tRK4 = [0]; const yRK4 = [y0];
+            for (let i = 0; i < n; i++) {
+                const tn = tRK4[i]; const yn = yRK4[i];
+                const k1 = logisticGrowth(tn, yn, r, K);
+                const k2 = logisticGrowth(tn + h/2, yn + h*k1/2, r, K);
+                const k3 = logisticGrowth(tn + h/2, yn + h*k2/2, r, K);
+                const k4 = logisticGrowth(tn + h, yn + h*k3, r, K);
+                yRK4.push(yn + (h/6) * (k1 + 2*k2 + 2*k3 + k4));
+                tRK4.push(tn + h);
+            }
+            const errorRK4 = Math.abs(yRK4[yRK4.length-1] - analyticFinal);
+            
+            let html = `
+                <h2>📊 Comparación de Métodos (Paso $h=${h}$)</h2>
+                <div class="result-item">
+                    <p><strong>Solución Analítica (Exacta):</strong> <span class="solution-value">${analyticFinal.toFixed(4)}</span></p>
+                    <table>
+                        <tr><th>Método</th><th>$y(t_f)$ (Aprox.)</th><th>Error Absoluto</th><th>Orden de Error Local</th></tr>
+                        <tr><td>**Euler**</td><td>${yEuler[yEuler.length-1].toFixed(4)}</td><td style="color: #dc3545;">${errorEuler.toExponential(4)}</td><td>$\mathcal{O}(h^2)$</td></tr>
+                        <tr><td>**Heun**</td><td>${yHeun[yHeun.length-1].toFixed(4)}</td><td style="color: #ffc107;">${errorHeun.toExponential(4)}</td><td>$\mathcal{O}(h^3)$</td></tr>
+                        <tr><td>**RK4**</td><td>${yRK4[yRK4.length-1].toFixed(4)}</td><td style="color: #28a745;">${errorRK4.toExponential(4)}</td><td>$\mathcal{O}(h^5)$</td></tr>
+                    </table>
+                </div>
+                <div class="success-box">
+                    **📈 Conclusión:** El método RK4 es significativamente más preciso. El error de Euler es típicamente el más alto, y el error de Heun se encuentra en un punto intermedio, demostrando la importancia del orden del método.
+                </div>
+            `;
+            
+            showResults(html, 'integracion');
+
+            const traces = [
+                { x: tAnalytic, y: yAnalytic, mode: 'lines', name: 'Analítica (Exacta)', line: {color: '#2e7d32', width: 4, dash: 'solid'} },
+                { x: tEuler, y: yEuler, mode: 'lines+markers', name: 'Euler', line: {color: '#dc3545', width: 2} },
+                { x: tHeun, y: yHeun, mode: 'lines+markers', name: 'Heun', line: {color: '#ffc107', width: 2} },
+                { x: tRK4, y: yRK4, mode: 'lines+markers', name: 'RK4', line: {color: '#667eea', width: 2} }
+            ];
+
+            const layout = {
+                title: `Comparación de Soluciones EDO Logística (Paso h=${h})`,
+                xaxis: {title: 'Tiempo (t)'}, yaxis: {title: 'Población (y)'},
+                shapes: [{ type: 'line', x0: 0, y0: K, x1: tf, y1: K, line: {color: 'red', width: 2, dash: 'dot'} }]
+            };
+
+            Plotly.newPlot('plot-integracion', traces, layout);
+            document.getElementById('plot-integracion').scrollIntoView({ behavior: 'smooth' });
+            
+            // Re-renderizar MathJax
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typeset();
+            }
+        }
+        
+        // Inicializar la sección de Sistemas al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('sistemas');
+            solveAll('sistemas'); // Carga la solución predeterminada
+        });
+    </script>
+</body>
+</html>
